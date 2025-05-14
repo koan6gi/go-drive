@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	repErr "github.com/koan6gi/go-drive/internal/repository/errors"
 )
 
 type FileSystem struct {
@@ -82,7 +84,10 @@ func (st *FileSystem) Init() error {
 
 	err := os.Mkdir(StorageDirectory, 0777)
 	if err != nil && !os.IsExist(err) {
-		return err
+		return &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't create local storage dir: %v", err),
+		}
 	}
 
 	return walkDir(st.st)
@@ -92,7 +97,10 @@ func walkDir(d *FSItem) error {
 	path := d.Path
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't open file: %s: %v", path, err),
+		}
 	}
 	defer file.Close()
 
@@ -126,7 +134,9 @@ func walkDir(d *FSItem) error {
 }
 
 func (st *FileSystem) getParentDirectory(path string) (*FSItem, error) {
-	err := fmt.Errorf("bad path %s", path)
+	err := &repErr.PathError{
+		Content: fmt.Sprintf("bad path: %s", path),
+	}
 
 	paths := strings.Split(path, "/")
 	if len(paths) == 1 {
@@ -169,7 +179,9 @@ func (st *FileSystem) getItem(path string) (*FSItem, error) {
 		return item, nil
 	}
 
-	return nil, fmt.Errorf("%s not found", path)
+	return nil, &repErr.PathError{
+		Content: fmt.Sprintf("bad path: %s", path),
+	}
 }
 
 func (st *FileSystem) GetFile(path string) (*os.File, error) {
@@ -182,14 +194,24 @@ func (st *FileSystem) GetFile(path string) (*os.File, error) {
 func (st *FileSystem) getFile(path string) (*os.File, error) {
 	item, err := st.getItem(path)
 	if err != nil {
-		return nil, fmt.Errorf("file %s", err)
+		return nil, err
 	}
 
 	if item.Type != fsFile {
-		return nil, fmt.Errorf("%s not file", path)
+		return nil, &repErr.PathError{
+			Content: fmt.Sprintf("not file: %s", path),
+		}
 	}
 
-	return os.Open(item.Path)
+	file, err := os.Open(item.Path)
+	if err != nil {
+		err = &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't open file: %s, %v", item.Path, err),
+		}
+	}
+
+	return file, err
 }
 
 func (st *FileSystem) CreateFile(path string) (*os.File, error) {
@@ -207,7 +229,9 @@ func (st *FileSystem) createFile(path string) (*os.File, error) {
 	}
 
 	if _, ok := dir.Entry[name]; ok {
-		return nil, fmt.Errorf("%s already exist", path)
+		return nil, &repErr.PathError{
+			Content: fmt.Sprintf("path %s is already exist", path),
+		}
 	}
 
 	newFile := &FSItem{
@@ -219,7 +243,10 @@ func (st *FileSystem) createFile(path string) (*os.File, error) {
 
 	file, err := os.Create(newFile.Path)
 	if err != nil {
-		return nil, err
+		return nil, &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't create file: %s: %v", newFile.Path, err),
+		}
 	}
 
 	dir.Entry[name] = newFile
@@ -242,7 +269,9 @@ func (st *FileSystem) createDirectory(path string) error {
 	}
 
 	if _, ok := dir.Entry[name]; ok {
-		return fmt.Errorf("%s is alredy exist", path)
+		return &repErr.PathError{
+			Content: fmt.Sprintf("path %s is already exist", path),
+		}
 	}
 
 	newDir := &FSItem{
@@ -254,7 +283,10 @@ func (st *FileSystem) createDirectory(path string) error {
 
 	err = os.Mkdir(newDir.Path, 0777)
 	if err != nil {
-		return err
+		return &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't create directory: %s: %v", newDir.Path, err),
+		}
 	}
 
 	dir.Entry[name] = newDir
@@ -284,6 +316,13 @@ func (st *FileSystem) delete(path string) error {
 		err = os.Remove(item.Path)
 	case fsDir:
 		err = os.RemoveAll(item.Path)
+	}
+
+	if err != nil {
+		err = &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't delete file or directory: %s: %v", item.Path, err),
+		}
 	}
 
 	return err
@@ -340,7 +379,10 @@ func (st *FileSystem) copy(dest string, src string) error {
 	if err != nil && err != io.EOF {
 		destFile.Close()
 		_ = st.delete(newPath)
-		return err
+		return &repErr.SystemError{
+			Err:     err,
+			Content: fmt.Sprintf("can't copy %s to %s: %v", src, dest, err),
+		}
 	}
 
 	return nil
