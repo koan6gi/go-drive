@@ -2,9 +2,17 @@ package gateway
 
 import "net/http"
 
+const (
+	maxFileSize = 100 << 20
+)
+
 // POST /upload?dest
 func Upload(w http.ResponseWriter, r *http.Request) {
-
+	err := r.ParseMultipartForm(maxFileSize)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 }
 
 // GET /download?src
