@@ -53,6 +53,8 @@ const StorageDirectory = "./storage"
 
 // TODO: make ext-error types
 type Storage interface {
+	Lock()
+	Unlock()
 	CreateFile(path string) (*os.File, error)
 	CreateDirectory(path string) error
 	GetFile(path string) (*os.File, error)
@@ -62,18 +64,16 @@ type Storage interface {
 	List(path string) (*[]DirEntry, error)
 }
 
-var Store Storage
+var FileStorage Storage
 
 func SetupStorage() error {
-	var fileSystem FileSystem
-	err := fileSystem.Init()
-	Store = &fileSystem
-
+	var err error
+	FileStorage, err = NewFileStorage()
 	return err
 }
 
-func (st *FileSystem) Init() error {
-	*st = FileSystem{
+func NewFileStorage() (*FileSystem, error) {
+	storage := &FileSystem{
 		mu: sync.Mutex{},
 		st: &FSItem{
 			Type:  fsDir,
@@ -84,13 +84,21 @@ func (st *FileSystem) Init() error {
 
 	err := os.Mkdir(StorageDirectory, 0777)
 	if err != nil && !os.IsExist(err) {
-		return &repErr.SystemError{
+		return nil, &repErr.SystemError{
 			Err:     err,
 			Content: fmt.Sprintf("can't create local storage dir: %v", err),
 		}
 	}
 
-	return walkDir(st.st)
+	return storage, walkDir(storage.st)
+}
+
+func (st *FileSystem) Lock() {
+	st.mu.Lock()
+}
+
+func (st *FileSystem) Unlock() {
+	st.mu.Unlock()
 }
 
 func walkDir(d *FSItem) error {
@@ -185,13 +193,6 @@ func (st *FileSystem) getItem(path string) (*FSItem, error) {
 }
 
 func (st *FileSystem) GetFile(path string) (*os.File, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.getFile(path)
-}
-
-func (st *FileSystem) getFile(path string) (*os.File, error) {
 	item, err := st.getItem(path)
 	if err != nil {
 		return nil, err
@@ -215,13 +216,6 @@ func (st *FileSystem) getFile(path string) (*os.File, error) {
 }
 
 func (st *FileSystem) CreateFile(path string) (*os.File, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.createFile(path)
-}
-
-func (st *FileSystem) createFile(path string) (*os.File, error) {
 	name := path[strings.LastIndex(path, "/")+1:]
 	dir, err := st.getParentDirectory(path)
 	if err != nil {
@@ -255,13 +249,6 @@ func (st *FileSystem) createFile(path string) (*os.File, error) {
 }
 
 func (st *FileSystem) CreateDirectory(path string) error {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.createDirectory(path)
-}
-
-func (st *FileSystem) createDirectory(path string) error {
 	name := path[strings.LastIndex(path, "/")+1:]
 	dir, err := st.getParentDirectory(path)
 	if err != nil {
@@ -295,13 +282,6 @@ func (st *FileSystem) createDirectory(path string) error {
 }
 
 func (st *FileSystem) Delete(path string) error {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.delete(path)
-}
-
-func (st *FileSystem) delete(path string) error {
 	item, err := st.getItem(path)
 	if err != nil {
 		return err
@@ -329,14 +309,7 @@ func (st *FileSystem) delete(path string) error {
 }
 
 func (st *FileSystem) Move(dest string, src string) error {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.move(dest, src)
-}
-
-func (st *FileSystem) move(dest string, src string) error {
-	err := st.copy(dest, src)
+	err := st.Copy(dest, src)
 	if err != nil {
 		return err
 	}
@@ -344,7 +317,7 @@ func (st *FileSystem) move(dest string, src string) error {
 	//name := src[strings.LastIndex(src, "/")+1:]
 	//newPath := dest+"/"+name
 
-	err = st.delete(src)
+	err = st.Delete(src)
 	if err != nil {
 		return err // TODO: return storage to normal stage
 	}
@@ -353,14 +326,7 @@ func (st *FileSystem) move(dest string, src string) error {
 }
 
 func (st *FileSystem) Copy(dest string, src string) error {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.copy(dest, src)
-}
-
-func (st *FileSystem) copy(dest string, src string) error {
-	srcFile, err := st.getFile(src)
+	srcFile, err := st.GetFile(src)
 	if err != nil {
 		return err
 	}
@@ -369,7 +335,7 @@ func (st *FileSystem) copy(dest string, src string) error {
 	name := src[strings.LastIndex(src, "/")+1:]
 	newPath := dest + "/" + name
 
-	destFile, err := st.createFile(newPath)
+	destFile, err := st.CreateFile(newPath)
 	if err != nil {
 		return err
 	}
@@ -378,7 +344,7 @@ func (st *FileSystem) copy(dest string, src string) error {
 	_, err = io.Copy(destFile, srcFile)
 	if err != nil && err != io.EOF {
 		destFile.Close()
-		_ = st.delete(newPath)
+		_ = st.Delete(newPath)
 		return &repErr.SystemError{
 			Err:     err,
 			Content: fmt.Sprintf("can't copy %s to %s: %v", src, dest, err),
@@ -389,13 +355,6 @@ func (st *FileSystem) copy(dest string, src string) error {
 }
 
 func (st *FileSystem) List(path string) (*[]DirEntry, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.list(path)
-}
-
-func (st *FileSystem) list(path string) (*[]DirEntry, error) {
 	item, err := st.getItem(path)
 	if err != nil {
 		return nil, err
