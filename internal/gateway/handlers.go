@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/koan6gi/go-drive/internal/repository"
 	repErr "github.com/koan6gi/go-drive/internal/repository/errors"
@@ -40,6 +41,9 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	defer formFile.Close()
 
 	filePath := r.URL.Query().Get("path") + "/" + handler.Filename
+	if strings.HasPrefix(filePath, "//") {
+		filePath = filePath[1:]
+	}
 
 	repository.FileStorage.Lock()
 	defer repository.FileStorage.Unlock()
@@ -261,13 +265,13 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	formFile, handler, err := r.FormFile("file")
+	formFile, _, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%s: can't get a file", http.StatusText(http.StatusBadRequest)), http.StatusBadRequest)
 	}
 	defer formFile.Close()
 
-	filePath := r.URL.Query().Get("path") + "/" + handler.Filename
+	filePath := r.URL.Query().Get("path")
 
 	repository.FileStorage.Lock()
 	defer repository.FileStorage.Unlock()

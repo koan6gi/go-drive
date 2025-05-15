@@ -143,6 +143,10 @@ func walkDir(d *FSItem) error {
 }
 
 func (st *FileSystem) getParentDirectory(path string) (*FSItem, error) {
+	if path == "/" {
+		return st.st, nil
+	}
+
 	err := &repErr.PathError{
 		Content: fmt.Sprintf("bad path: %s", path),
 	}
@@ -178,6 +182,10 @@ func (st *FileSystem) getParentDirectory(path string) (*FSItem, error) {
 }
 
 func (st *FileSystem) getItem(path string) (*FSItem, error) {
+	if path == "/" {
+		return st.st, nil
+	}
+
 	name := path[strings.LastIndex(path, "/")+1:]
 	dir, err := st.getParentDirectory(path)
 	if err != nil {
@@ -244,6 +252,8 @@ func (st *FileSystem) CreateFile(path string) (*os.File, error) {
 		}
 	}
 
+	_ = file.Chmod(0777)
+
 	dir.Entry[name] = newFile
 
 	return file, nil
@@ -283,6 +293,12 @@ func (st *FileSystem) CreateDirectory(path string) error {
 }
 
 func (st *FileSystem) Delete(path string) error {
+	if path == "/" {
+		return &repErr.PathError{
+			Content: "can't delete root",
+		}
+	}
+
 	item, err := st.getItem(path)
 	if err != nil {
 		return err
