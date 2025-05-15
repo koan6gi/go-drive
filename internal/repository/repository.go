@@ -213,7 +213,7 @@ func (st *FileSystem) GetFile(path string) (*os.File, error) {
 		}
 	}
 
-	file, err := os.Open(item.Path)
+	file, err := os.OpenFile(item.Path, os.O_RDWR, 0644)
 	if err != nil {
 		err = &repErr.SystemError{
 			Err:     err,
@@ -251,8 +251,6 @@ func (st *FileSystem) CreateFile(path string) (*os.File, error) {
 			Content: fmt.Sprintf("can't create file: %s: %v", newFile.Path, err),
 		}
 	}
-
-	_ = file.Chmod(0777)
 
 	dir.Entry[name] = newFile
 
