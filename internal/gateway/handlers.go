@@ -14,7 +14,18 @@ const (
 	maxFileSize = 100 << 20
 )
 
-// POST /upload
+// Upload godoc
+// @Summary Upload file
+// @Description Upload a file to the specified path
+// @Tags Files
+// @Accept multipart/form-data
+// @Produce plain
+// @Param file formData file true "File to upload"
+// @Param path query string true "Destination path"
+// @Success 200 {string} string "file upload success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /upload [post]
 func Upload(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(maxFileSize)
 	if err != nil {
@@ -54,7 +65,16 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "file upload success")
 }
 
-// GET /download
+// Download godoc
+// @Summary Download file
+// @Description Download file from specified path
+// @Tags Files
+// @Produce octet-stream
+// @Param path query string true "File path to download"
+// @Success 200 {file} binary "File content"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /download [get]
 func Download(w http.ResponseWriter, r *http.Request) {
 	filePath := r.URL.Query().Get("path")
 
@@ -85,7 +105,16 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, fileInfo.Name(), fileInfo.ModTime(), file)
 }
 
-// POST /directory
+// CreateDirectory godoc
+// @Summary Create directory
+// @Description Create new directory at specified path
+// @Tags Directories
+// @Produce plain
+// @Param path query string true "Directory path to create"
+// @Success 200 {string} string "create directory success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /directory [post]
 func CreateDirectory(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 
@@ -107,7 +136,16 @@ func CreateDirectory(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "create directory success")
 }
 
-// DELETE /delete
+// Delete godoc
+// @Summary Delete file/directory
+// @Description Delete file or directory at specified path
+// @Tags Files
+// @Produce plain
+// @Param path query string true "Path to delete"
+// @Success 200 {string} string "delete success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /delete [delete]
 func Delete(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 
@@ -129,7 +167,16 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "delete success")
 }
 
-// GET /list
+// List godoc
+// @Summary List directory contents
+// @Description Get list of files/directories in specified path
+// @Tags Directories
+// @Produce json
+// @Param path query string true "Directory path to list"
+// @Success 200 {array} string "List of files/directories"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /list [get]
 func List(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 
@@ -161,7 +208,17 @@ func List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PUT /move
+// Move godoc
+// @Summary Move file/directory
+// @Description Move file or directory from source to destination
+// @Tags Files
+// @Produce plain
+// @Param src query string true "Source path"
+// @Param dest query string true "Destination path"
+// @Success 200 {string} string "move success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /move [put]
 func Move(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	dest := query.Get("dest")
@@ -185,7 +242,18 @@ func Move(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "move success")
 }
 
-// PUT /update
+// Update godoc
+// @Summary Update file
+// @Description Update existing file content
+// @Tags Files
+// @Accept multipart/form-data
+// @Produce plain
+// @Param file formData file true "New file content"
+// @Param path query string true "File path to update"
+// @Success 200 {string} string "file update success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /update [put]
 func Update(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(maxFileSize)
 	if err != nil {
@@ -225,7 +293,17 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "file update success")
 }
 
-// PUT /copy
+// Copy godoc
+// @Summary Copy file/directory
+// @Description Copy file or directory from source to destination
+// @Tags Files
+// @Produce plain
+// @Param src query string true "Source path"
+// @Param dest query string true "Destination path"
+// @Success 200 {string} string "copy success"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /copy [put]
 func Copy(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	dest := query.Get("dest")

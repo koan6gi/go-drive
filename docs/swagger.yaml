@@ -1,0 +1,253 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API for file operations
+  title: File Storage API
+  version: "1.0"
+paths:
+  /copy:
+    put:
+      description: Copy file or directory from source to destination
+      parameters:
+      - description: Source path
+        in: query
+        name: src
+        required: true
+        type: string
+      - description: Destination path
+        in: query
+        name: dest
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: copy success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Copy file/directory
+      tags:
+      - Files
+  /delete:
+    delete:
+      description: Delete file or directory at specified path
+      parameters:
+      - description: Path to delete
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: delete success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete file/directory
+      tags:
+      - Files
+  /directory:
+    post:
+      description: Create new directory at specified path
+      parameters:
+      - description: Directory path to create
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: create directory success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create directory
+      tags:
+      - Directories
+  /download:
+    get:
+      description: Download file from specified path
+      parameters:
+      - description: File path to download
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File content
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Download file
+      tags:
+      - Files
+  /list:
+    get:
+      description: Get list of files/directories in specified path
+      parameters:
+      - description: Directory path to list
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of files/directories
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: List directory contents
+      tags:
+      - Directories
+  /move:
+    put:
+      description: Move file or directory from source to destination
+      parameters:
+      - description: Source path
+        in: query
+        name: src
+        required: true
+        type: string
+      - description: Destination path
+        in: query
+        name: dest
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: move success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Move file/directory
+      tags:
+      - Files
+  /update:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update existing file content
+      parameters:
+      - description: New file content
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: File path to update
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: file update success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update file
+      tags:
+      - Files
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file to the specified path
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Destination path
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: file upload success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Upload file
+      tags:
+      - Files
+schemes:
+- http
+swagger: "2.0"
