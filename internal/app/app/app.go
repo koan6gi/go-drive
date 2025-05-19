@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	addr = "localhost:8080"
+	addr = ":8080"
 )
 
 func Run() error {

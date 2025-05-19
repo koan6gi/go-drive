@@ -28,9 +28,11 @@ const (
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /upload [post]
 func Upload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize+1024)
+
 	err := r.ParseMultipartForm(maxFileSize)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%s: incorrect form", http.StatusText(http.StatusBadRequest)), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%s: incorrect form: %s", http.StatusText(http.StatusBadRequest), err.Error()), http.StatusBadRequest)
 		return
 	}
 
